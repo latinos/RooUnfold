@@ -1,6 +1,7 @@
 #include "TChain.h"
 #include "TFile.h"
 #include "TH1F.h"
+#include "TH2F.h"
 #include "TMath.h"
 #include "TSystem.h"
 #include "TTree.h"
@@ -10,9 +11,9 @@
 #include "TLorentzVector.h"
 #include "TRandom.h"
 
-gSystem->Load("RooUnfold/libRooUnfold.so");
+//gSystem->Load("libRooUnfold");
 
-#include "RooUnfold/src/RooUnfoldResponse.h"
+#include "src/RooUnfoldResponse.h"
 
 
 
@@ -21,7 +22,9 @@ gSystem->Load("RooUnfold/libRooUnfold.so");
 //------------------------------------------------------------------------------
 
 
-void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
+void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW", Bool_t jetGenVeto = 0 ) {
+
+  gSystem->Load("libRooUnfold");
 
   TH1::SetDefaultSumw2();
 
@@ -30,9 +33,56 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   //gSystem->mkdir(path, kTRUE);
  
  
+  //----------------------------------------------------------------------------
+  // Input files
+  //----------------------------------------------------------------------------
+
+  TString filesPath;
+
+  //filesPath = "/gpfs/csic_projects/tier3data/LatinosSkims/ReducedTrees/DiferentialXSection/";
+  filesPath = "/gpfs/csic_projects/cms/calderon/WWGEN/";
   
-  TString path = Form("_GEN_%djet_full.root",  jetChannel); 
+
+  TChain* tree = new TChain("latino", "latino");
+
+  //tree->Add(filesPath + "latino_000_WWJets2LMad_OF.root");
+  //tree->Add(filesPath + "latinostep3_latinosYieldSkim_MC_WWmg.root");
+
+  //tree->Add(filesPath + "latino_006_WWJets_pow_OF.root");
+  //tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets.root");
+  //tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets_Smear.root");
+  tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets_nll_ewk_Smear.root");
+
+
+  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF.root");
+  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets.root");
+  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets_Smear.root");
+  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets_nll_ewk_Smear.root");
+
+
+  //tree->Add(filesPath + "latino_000_WWJets_mad_OF.root");
+  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets.root");
+  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets_Smear.root");
+  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets_nll_ewk_Smear.root");
+
+  //tree->Add(filesPath + "
+
+  //tree->Add(filesPath + "latino_001_GGWWJets_OF.root");
+  //tree->Add(filesPath + "latino_001_GGWWJets_OF_genJets_Smear.root");
+
+  //----------------------------------------------------------------------------
+  // Define functions
+  //----------------------------------------------------------------------------
+  Float_t smear (Float_t xt); 
+
+   //----------------------------------------------------------------------------
+  // Output files
+  //----------------------------------------------------------------------------
   
+  //  TString path = Form("_GEN_%djet_pow_full.root",  jetChannel); 0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,
+  //TString path = Form("_GEN_0jet_gg_full_JetGenVeto_Eff.root"); 
+  TString path = Form("_GEN_0jet_pow_full_JetGenVeto_Eff.root");
+
   TFile* output = new TFile( theSample+path, "recreate");
 
 
@@ -44,13 +94,17 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   Double_t RECOpt1bins[11] = {10,20,40,60,80,100,125,150,175,200,210};
   Double_t GENpt1bins[7] = {10,20,50,100,150,200,210};
 
+  const Int_t pt1Nbin = 9;
+  const Int_t ptllNbin = 8; 
+  const Int_t mllNbin = 9;
+  const Int_t dphiNbin = 13;
+  const Int_t jetEtNbin = 10;
 
-
-  Double_t pt1bins[9] = {20,40,60,80,100,125,150,175,200}; 
-  Double_t ptllbins[7] = {30,40,60,80,100,150,200};
-  Double_t mllbins[9] = {20,40,60,80,100,125,150,175,200};
-  Double_t dphibins[13] = {0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3};
-
+  Double_t pt1bins[pt1Nbin] = {20,40,60,80,100,125,150,175,200}; 
+  Double_t ptllbins[ptllNbin] = {30,40,50,60,70,85,120,150};
+  Double_t mllbins[mllNbin] = {20,40,60,80,100,125,150,175,200};
+  Double_t dphibins[dphiNbin] = {0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3};//{0,0.5,1,1.5,2,2.5,3};
+  Double_t jetEtbins[jetEtNbin] = {30,40,50,60,70,80,90,100,110,120}; 
 
 
   // Pt, Dilepton, DeltaPhi, Mll
@@ -58,49 +112,68 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   // GEN level ( phase space)  differential histograms 
   //----------------------------------------------------------------------------
 
-  TH1F* hPtLepton1_GEN  = new TH1F("hPtLepton1_GEN",       "", 8, pt1bins);
-  TH1F* hPtLepton1_RECO  = new TH1F("hPtLepton1_RECO",       "", 8, pt1bins);
-  TH2F* hPtLepton1_RECO_GEN =  new TH2F("hPtLepton1_RECO_GEN", "", 8, pt1bins, 8, pt1bins);
+  TH1F* hPtLepton1_GEN  = new TH1F("hPtLepton1_GEN",       "", pt1Nbin-1, pt1bins);
+  TH1F* hPtLepton1_RECO  = new TH1F("hPtLepton1_RECO",       "", pt1Nbin-1, pt1bins);
+  TH2F* hPtLepton1_RECO_GEN =  new TH2F("hPtLepton1_RECO_GEN", "", pt1Nbin-1, pt1bins, pt1Nbin-1, pt1bins);
 
-  TH1F* hDilepton_GEN  = new TH1F("hDilepton_GEN",       "", 6, ptllbins);
-  TH1F* hDilepton_RECO  = new TH1F("hDilepton_RECO",       "", 6, ptllbins);
-  TH2F* hDilepton_RECO_GEN =  new TH2F("hDilepton_RECO_GEN", "", 6, ptllbins, 6, ptllbins);
+  TH1F* hDilepton_GEN  = new TH1F("hDilepton_GEN",       "", ptllNbin-1, ptllbins);
+  TH1F* hDilepton_RECO  = new TH1F("hDilepton_RECO",       "", ptllNbin-1, ptllbins);
+  TH2F* hDilepton_RECO_GEN =  new TH2F("hDilepton_RECO_GEN", "", ptllNbin-1, ptllbins, ptllNbin-1, ptllbins);
 
-  TH1F* hmll_GEN  = new TH1F("hmll_GEN",       "", 8, mllbins);
-  TH1F* hmll_RECO  = new TH1F("hmll_RECO",       "",8,  mllbins);
-  TH2F* hmll_RECO_GEN =  new TH2F("hmll_RECO_GEN", "", 8, mllbins, 8, mllbins);
+  TH1F* hmll_GEN  = new TH1F("hmll_GEN",       "", mllNbin-1, mllbins);
+  TH1F* hmll_RECO  = new TH1F("hmll_RECO",       "",mllNbin-1,  mllbins);
+  TH2F* hmll_RECO_GEN =  new TH2F("hmll_RECO_GEN", "", mllNbin-1, mllbins, mllNbin-1, mllbins);
 
+  TH1F* hdphi_GEN  = new TH1F("hdphi_GEN",       "", dphiNbin-1, dphibins);
+  TH1F* hdphi_RECO  = new TH1F("hdphi_RECO",       "", dphiNbin-1,  dphibins);
+  TH2F* hdphi_RECO_GEN =  new TH2F("hdphi_RECO_GEN", "", dphiNbin-1, dphibins, dphiNbin-1, dphibins);
 
-  TH1F* hdphi_GEN  = new TH1F("hdphi_GEN",       "", 12, dphibins);
-  TH1F* hdphi_RECO  = new TH1F("hdphi_RECO",       "",12,  dphibins);
-  TH2F* hdphi_RECO_GEN =  new TH2F("hdphi_RECO_GEN", "", 12, dphibins, 12, dphibins);
+  TH1F* hjetEt_GEN  = new TH1F("hjetEt_GEN",       "", jetEtNbin-1, jetEtbins);
+  TH1F* hjetEt_RECO  = new TH1F("hjetEt_RECO",       "", jetEtNbin-1,  jetEtbins);
+  TH2F* hjetEt_RECO_GEN =  new TH2F("hjetEt_RECO_GEN", "", jetEtNbin-1, jetEtbins, jetEtNbin-1, jetEtbins);
 
+  TH1F* hInclusive_GEN  = new TH1F("hInclusive_GEN",       "", 3,0,3);
+ 
+
+  RooUnfoldResponse responsePtLepton1GEN(hPtLepton1_RECO, hPtLepton1_GEN);
+  RooUnfoldResponse responseMllGEN(hmll_RECO, hmll_GEN );
+  RooUnfoldResponse responseJetEtGEN(hjetEt_RECO, hjetEt_GEN );
 
 
   // WW level differential histograms 
   //----------------------------------------------------------------------------
 
-  TH1F* hPtLepton1WWLevel_RECO  = new TH1F("hPtLepton1WWLevel_RECO",       "", 8, pt1bins);
-  TH1F* hPtLepton1WWLevel_GEN  = new TH1F("hPtLepton1WWLevel_GEN",       "", 8, pt1bins);
-  TH2F* hPtLepton1WWLevel_RECO_GEN =  new TH2F("hPtLepton1WWLevel_RECO_GEN", "", 8, pt1bins, 8, pt1bins);
+  TH1F* hPtLepton1WWLevel_RECO  = new TH1F("hPtLepton1WWLevel_RECO",       "", pt1Nbin-1, pt1bins);
+  TH1F* hPtLepton1WWLevel_GEN  = new TH1F("hPtLepton1WWLevel_GEN",       "", pt1Nbin-1, pt1bins);
+  TH2F* hPtLepton1WWLevel_RECO_GEN =  new TH2F("hPtLepton1WWLevel_RECO_GEN", "", pt1Nbin-1, pt1bins, pt1Nbin-1, pt1bins);
 
  
-  TH1F* hDileptonWWLevel_RECO  = new TH1F("hDileptonWWLevel_RECO",       "", 6, ptllbins);
-  TH1F* hDileptonWWLevel_GEN  = new TH1F("hDileptonWWLevel_GEN",       "", 6, ptllbins);
-  TH2F* hDileptonWWLevel_RECO_GEN =  new TH2F("hDileptonWWLevel_RECO_GEN", "", 6, ptllbins, 6, ptllbins);
+  TH1F* hDileptonWWLevel_RECO  = new TH1F("hDileptonWWLevel_RECO",       "", ptllNbin-1, ptllbins);
+  TH1F* hDileptonWWLevel_GEN  = new TH1F("hDileptonWWLevel_GEN",       "", ptllNbin-1, ptllbins);
+  TH2F* hDileptonWWLevel_RECO_GEN =  new TH2F("hDileptonWWLevel_RECO_GEN", "", ptllNbin-1, ptllbins, ptllNbin-1, ptllbins);
 
-  TH1F* hmllWWLevel_RECO  = new TH1F("hmllWWLevel_RECO",       "", 8, mllbins);
-  TH1F* hmllWWLevel_GEN  = new TH1F("hmllWWLevel_GEN",       "", 8, mllbins);
-  TH2F* hmllWWLevel_RECO_GEN =  new TH2F("hmllWWLevel_RECO_GEN", "", 8, mllbins,8, mllbins);
+  TH1F* hmllWWLevel_RECO  = new TH1F("hmllWWLevel_RECO",       "", mllNbin-1, mllbins);
+  TH1F* hmllWWLevel_GEN  = new TH1F("hmllWWLevel_GEN",       "", mllNbin-1, mllbins);
+  TH2F* hmllWWLevel_RECO_GEN =  new TH2F("hmllWWLevel_RECO_GEN", "", mllNbin-1, mllbins,mllNbin-1, mllbins);
 
-  TH1F* hdphiWWLevel_RECO  = new TH1F("hdphiWWLevel_RECO",       "", 12, dphibins);
-  TH1F* hdphiWWLevel_GEN  = new TH1F("hdphiWWLevel_GEN",       "", 12, dphibins);
-  TH2F* hdphiWWLevel_RECO_GEN =  new TH2F("hdphiWWLevel_RECO_GEN", "", 12, dphibins,12, dphibins);
+  TH1F* hdphiWWLevel_RECO  = new TH1F("hdphiWWLevel_RECO",       "", dphiNbin-1, dphibins);
+  TH1F* hdphiWWLevel_GEN  = new TH1F("hdphiWWLevel_GEN",       "", dphiNbin-1, dphibins);
+  TH2F* hdphiWWLevel_RECO_GEN =  new TH2F("hdphiWWLevel_RECO_GEN", "", dphiNbin-1, dphibins,dphiNbin-1, dphibins);
 
-
-  TH1D* hPtLepton1WWLevel_nonselected = new TH1D("hPtLepton1WWLevel_nonselected", "hPtLepton1WWLevel_nonselected",8, pt1bins);
+  TH1F* hjetEtWWLevel_GEN  = new TH1F("hjetEtWWLevel_GEN",       "", jetEtNbin-1, jetEtbins);
+  TH1F* hjetEtWWLevel_RECO  = new TH1F("hjetEtWWLevel_RECO",       "", jetEtNbin-1,  jetEtbins);
+  TH2F* hjetEtWWLevel_RECO_GEN =  new TH2F("hjetEtWWLevel_RECO_GEN", "", jetEtNbin-1, jetEtbins, jetEtNbin-1, jetEtbins);
+  
+  TH1D* hPtLepton1WWLevel_nonselected = new TH1D("hPtLepton1WWLevel_nonselected", "hPtLepton1WWLevel_nonselected",pt1Nbin-1, pt1bins);
 
   TH1F* hdeltaR = new TH1F("hdeltaR", "hdeltaR", 50,0,0.1);
+
+  TH1F* hgenJetEt = new TH1F("hgenJetEt", "hgenJetEt", 100,0,100);
+  TH1F* hrecoJetEt = new TH1F("hrecoJetEt", "hrecoJetEt", 100,0,100);
+  TH2F* hJetEt_Gen_Reco = new TH2F("hJetEt_Gen_Reco", "hJetEt_Gen_Reco", 100,0,100,100,0,100);
+
+  TH1F* hInclusiveWWLevel_GEN  = new TH1F("hInclusiveWWLevel_GEN",       "",3,0,3);
+  TH1F* hInclusiveWWLevel_RECO  = new TH1F("hInclusiveWWLevel_RECO",       "",3,0,3);
 
 
   // WW level  define response matrix
@@ -113,20 +186,9 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
 
   RooUnfoldResponse responseDphi(hdphiWWLevel_RECO , hdphiWWLevel_GEN);
 
+  RooUnfoldResponse responseJetEt(hjetEtWWLevel_RECO , hjetEtWWLevel_GEN);
 
-  //----------------------------------------------------------------------------
-  // Input files
-  //----------------------------------------------------------------------------
-
-  TString filesPath;
-
-  filesPath = "/gpfs/csic_projects/tier3data/LatinosSkims/ReducedTrees/DiferentialXSection/";
-
-  TChain* tree = new TChain("latino", "latino");
-
-  //tree->Add(filesPath + "latino_000_WWJets2LMad_OF.root");
-  //tree->Add(filesPath + "latinostep3_latinosYieldSkim_MC_WWmg.root");
-  tree->Add(filesPath + "latino_000_WWJets_madgraph.root");
+  RooUnfoldResponse responseInclusive(hInclusiveWWLevel_RECO, hInclusiveWWLevel_GEN );
 
   // Declaration of leaf types
   //----------------------------------------------------------------------------
@@ -140,6 +202,9 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   Float_t dphilljetjet; tree->SetBranchAddress("dphilljetjet", &dphilljetjet);
   Float_t drll;         tree->SetBranchAddress("drll"        , &drll);
   Float_t effW;         tree->SetBranchAddress("effW"        , &effW);
+  Float_t jetphi1;      tree->SetBranchAddress("jetphi1"     , &jetphi1);
+  Float_t jetphi2;      tree->SetBranchAddress("jetphi2"     , &jetphi2);
+  Float_t jetphi3;      tree->SetBranchAddress("jetphi3"     , &jetphi3);
   Float_t jeteta1;      tree->SetBranchAddress("jeteta1"     , &jeteta1);
   Float_t jeteta2;      tree->SetBranchAddress("jeteta2"     , &jeteta2);
   Float_t jeteta3;      tree->SetBranchAddress("jeteta3"     , &jeteta3);
@@ -189,7 +254,8 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   Float_t puW;          tree->SetBranchAddress("puW"         , &puW);
   
 
-
+  // Apply NNLL resummation 
+  Float_t nllW = 1; //tree->SetBranchAddress("nllW", &nllW);
 
 // GEN info... 
 
@@ -236,7 +302,28 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   tree->SetBranchAddress("genVV_lepton2_oVpid", &lepGenS3M2); 
   tree->SetBranchAddress("genVV_lepton3_oVpid", &lepGenS3M3); 
 
-  // 
+  Float_t jetGen1_pt, jetGen2_pt, jetGen3_pt, jetGen4_pt, jetGen5_pt;
+  tree->SetBranchAddress("genVV_jet1_pt", &jetGen1_pt);
+  tree->SetBranchAddress("genVV_jet2_pt", &jetGen2_pt);
+  tree->SetBranchAddress("genVV_jet3_pt", &jetGen3_pt);
+  tree->SetBranchAddress("genVV_jet4_pt", &jetGen4_pt);  
+  tree->SetBranchAddress("genVV_jet5_pt", &jetGen5_pt);
+
+  Float_t jetGen1_eta, jetGen2_eta, jetGen3_eta, jetGen4_eta, jetGen5_eta;
+  tree->SetBranchAddress("genVV_jet1_eta", &jetGen1_eta);
+  tree->SetBranchAddress("genVV_jet2_eta", &jetGen2_eta);
+  tree->SetBranchAddress("genVV_jet3_eta", &jetGen3_eta);
+  tree->SetBranchAddress("genVV_jet4_eta", &jetGen4_eta);  
+  tree->SetBranchAddress("genVV_jet5_eta", &jetGen5_eta);
+
+  Float_t jetGen1_phi, jetGen2_phi, jetGen3_phi, jetGen4_phi, jetGen5_phi;
+  tree->SetBranchAddress("genVV_jet1_phi", &jetGen1_phi);
+  tree->SetBranchAddress("genVV_jet2_phi", &jetGen2_phi);
+  tree->SetBranchAddress("genVV_jet3_phi", &jetGen3_phi);
+  tree->SetBranchAddress("genVV_jet4_phi", &jetGen4_phi);  
+  tree->SetBranchAddress("genVV_jet5_phi", &jetGen5_phi);
+
+// 
 
  
 
@@ -260,30 +347,34 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
 
   // Float_t Nentries = 179545; 
   //Float_t Nentries = 187525;
-  Float_t Nentries = 5000;
-
+  Float_t Nentries = 10745; // with powheg 
+  //Float_t Nentries = 9792; // with madgraph 
 
   for (int ievent=0; ievent<tree->GetEntriesFast(); ievent++) {
   //for (int ievent=0; ievent<Nentries; ievent++) {
   //for (int ievent=Nentries; ievent<tree->GetEntriesFast(); ievent++) {
    
     tree->GetEntry(ievent);
-  
+
+    //Double_t mybaseW =  5984.0/1933235;//5812.3/1933235; // madgraph (1933232)
+    Double_t mybaseW = 5984.0/999864;//  5812.3/999864; // powheg (999860)
+    //Double_t mybaseW = 182.852 /109986; // GGWW 
+    //Double_t mybaseW = 5984.0/539594; //5812.3/539594; // mcnlo
 
 
-    Float_t luminosity = 19.468;
+
+    Float_t luminosity = 19.365;
 
     Double_t efficiencyW =  effW * triggW ;
     // Double_t totalW = effW * triggW * baseW * efficiencyW * luminosity;
 
-    Double_t totalW = 1;//efficiencyW;
+    Double_t totalW = puW * mybaseW * luminosity;//efficiencyW;
 
-    Double_t totalWGen = 1;//puW;
+    Double_t totalWGen = nllW *  puW *  mybaseW * luminosity ;
     
-    Double_t totalWReco = 1;//puW * effW * triggW;
+    Double_t totalWReco =  effW * triggW * nllW * puW *  mybaseW * luminosity;// * effW * triggW ;//puW *  mybaseW * luminosity;//puW * effW * triggW * mybaseW * luminosity;
 
-
-
+  
     // The GEN selection begins here
     //--------------------------------------------------------------------------
     
@@ -303,7 +394,6 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
     if (fabs(lepGenM1)!= 24) continue; 
     if (fabs(lepGenM2)!= 24) continue; 
 
-
     if (lepGenpt1 <= 20) continue;  
     if (lepGenpt2 <= 20) continue;
 
@@ -313,8 +403,27 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
 	 (fabs(lepGenpid1) == 11 && fabs(lepGeneta1) >= 2.5)) continue;
 
     if ( (fabs(lepGenpid2) == 13 && fabs(lepGeneta2) >= 2.4) || 
-    (fabs(lepGenpid2) == 11 && fabs(lepGeneta2) >= 2.5)) continue;
+	 (fabs(lepGenpid2) == 11 && fabs(lepGeneta2) >= 2.5)) continue;
+    
 
+
+    // If jet veto at GEN level
+    //--------------------------------------------------------------------------
+
+    Int_t nGenJets = 0, nGenJet1 = 0, nGenJet2 = 0, nGenJet3 = 0, nGenJet4 = 0, nGenJet5 = 0; 
+  
+    if ( jetGen1_pt>=30 ) nGenJet1++;
+    if ( jetGen2_pt>=30 ) nGenJet2++;
+    if ( jetGen3_pt>=30 ) nGenJet3++;
+    if ( jetGen4_pt>=30 ) nGenJet4++;
+    if ( jetGen5_pt>=30 ) nGenJet5++;
+   
+    nGenJets = nGenJet1 + nGenJet2 + nGenJet3 + nGenJet4 + nGenJet5; 
+    
+    if ( jetGenVeto && nGenJets > 0 )  continue;
+
+    if ( jetChannel && nGenJets != 1 ) continue;
+ 
 
     Float_t dileptonGenPt;
     Float_t mllGen;
@@ -325,45 +434,37 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
     leptonGen1p4.SetPtEtaPhiM(lepGenpt1, lepGeneta1, lepGenphi1, 0.0);
     leptonGen2p4.SetPtEtaPhiM(lepGenpt2, lepGeneta2, lepGenphi2, 0.0);   
 
+  
+    Float_t Genpt1S = smear(lepGenpt1);    
     
     dileptonGenPt = (leptonGen1p4+leptonGen2p4).Pt();
     mllGen = (leptonGen1p4+leptonGen2p4).M();
     dphiGen = fabs(leptonGen1p4.DeltaPhi(leptonGen2p4));
+
+
    
-    hPtLepton1_GEN->Fill(lepGenpt1, totalWGen);//*baseW*luminosity); // leading pt ---> which pt should I store here? 
+    hPtLepton1_GEN->Fill(lepGenpt1, totalWGen);//*baseW*luminosity*0.00300652); // leading pt ---> which pt should I store here? 
     
     hDilepton_GEN->Fill(dileptonGenPt,totalWGen); // ptll 
     
     hmll_GEN->Fill(mllGen,totalWGen); // mll
       
     hdphi_GEN->Fill(dphiGen,totalWGen); // deltaPhi
-    
 
+    hjetEt_GEN->Fill(jetGen1_pt, totalWGen); 
 
-    /// ---> 3) Going to apply the selection analysis cuts on RECO objects
+    hInclusive_GEN->Fill(1, totalWGen);
  
   
     // The RECO selection begins here. The RECO leptons are supposed to pass the ID+ISO selection already? 
     //----------------------------------------------------------------------------------------------------
-
-    Int_t dphiv = (njet <= 1 || (njet > 1 && dphilljetjet < 165.*TMath::DegToRad()));
-    
-    Float_t metvar = (njet <= 1) ? mpmet : pfmet;
-    
-    Float_t jetbin = njet;
-    
-    Float_t dyMVA = ( !sameflav || ( (njet!=0 || dymva1>0.88) && (njet!=1 || dymva1>0.84) && ( njet==0 || njet==1 || (pfmet > 45.0)) ) );
-
-    
   
-    //--- define migration matrix without any selection efficiency propagated, but fiducial region as reco one.
-
-   
     TLorentzVector lepton1p4;
     TLorentzVector lepton2p4;
     lepton1p4.SetPtEtaPhiM(pt1, eta1, phi1, 0.0);
     lepton2p4.SetPtEtaPhiM(pt2, eta2, phi2, 0.0);
-    
+   
+
     Float_t dileptonPt = (lepton1p4+lepton2p4).Pt();
     Float_t mll = (lepton1p4+lepton2p4).M();
     Float_t deltaphill = fabs(lepton1p4.DeltaPhi(lepton2p4));
@@ -381,11 +482,38 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
     hdphi_RECO->Fill(dphill, totalW);
     hdphi_RECO_GEN->Fill(dphill,dphiGen , totalW);
  
+    hjetEt_RECO->Fill(jetpt1, totalW);
+    hjetEt_RECO_GEN->Fill(jetpt1, jetGen1_pt, totalW);
 
-      Bool_t isMatched = true; 
-      Float_t deltaR = 9999.9;
+
+    // ---->>> Fill Response matrix to do only unfolding on resolution
+    //         without any selection efficiency propagated, but fiducial region as reco one.
+
+    responsePtLepton1GEN.Fill(pt1, lepGenpt1, totalWReco);
+    responseMllGEN.Fill(mll, mllGen, totalWReco);
+
+ 
+
+    /// ---> 3) Going to apply the selection analysis cuts on RECO objects
+
+    Int_t dphiv = (njet <= 1 || (njet > 1 && dphilljetjet < 165.*TMath::DegToRad()));
     
-    if(  pt1 > 20 && pt2 > 20 && !sameflav && ch1*ch2 < 0 &&
+    Float_t metvar = (njet <= 1) ? mpmet : pfmet;
+    
+    Float_t jetbin = njet;
+    
+    Float_t dyMVA = ( !sameflav || ( (njet!=0 || dymva1>0.88) && (njet!=1 || dymva1>0.84) && ( njet==0 || njet==1 || (pfmet > 45.0)) ) );
+
+
+    Bool_t isMatched = true; 
+    Bool_t isMatchedGEN = true; 
+    Bool_t isMatchedRECO = true; 
+    Float_t deltaR = 9999.9;
+   
+    hgenJetEt->Fill(jetGen1_pt );
+  
+
+    if(  pt1 > 20 && pt2 > 20  && !sameflav && ch1*ch2 < 0 &&
 	 trigger == 1                        &&
 	 nextra == 0                         && 
 	 pfmet > 20                          &&
@@ -394,95 +522,145 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
 	 (mpmet > 20  && dyMVA)              &&
 	 (dphiv || !sameflav)                &&
 	 bveto_mu                            &&
-	 ptll>30 && (!sameflav || ptll>45)   &&
+	 ptll>30 && (!sameflav || ptll>45 )  &&
 	 jetbin == jetChannel                && 
-	 (bveto_ip==1 &&  nbjettche==0)      
-	   ){
-       
+	 (bveto_ip==1 &&  nbjettche==0)   
+	 ){
+     
+	//hgenJetEt->Fill(jetGen1_pt );
+	hrecoJetEt->Fill(jetpt1);
+	hJetEt_Gen_Reco->Fill(jetGen1_pt, jetpt1);
+
+	//	cout << jetGen1_pt << "  "  <<jetpt1  << endl;
+
+	// if (true) {	     
+
+
+
 
       // DEFINE MATCHING RECO - GEN
       //--------------------------------------------------------------------------
     
-      if ( lepton1p4.DeltaR(leptonGen1p4) >= 0.15 && lepton1p4.DeltaR(leptonGen2p4) >= 0.15 )  isMatched = false;
-      // (**) Option 1
-      //if (isMatched)  cout << 	ievent << "  " << phi1 << "  " << lepGenphi1 << "  " << lepGenpt3  << "  " << isMatched << endl;
-      //if ( lepton1p4.DeltaR(leptonGen1p4) >= 0.15 )  isMatched = false;    // (**) Option 2
+	//if ( lepton1p4.DeltaR(leptonGen1p4) >= 0.15 )isMatchedGEN = false;//&& lepton1p4.DeltaR(leptonGen2p4) >= 0.15 )  isMatchedGEN = false;
 
-      //--------------------------------------------------------------------------
+	if ( lepton1p4.DeltaR(leptonGen1p4) >= 0.15 && lepton1p4.DeltaR(leptonGen2p4) >= 0.15 )  isMatchedGEN = false;
+	
+	if ( leptonGen1p4.DeltaR(lepton1p4) >= 0.15 && leptonGen1p4.DeltaR(lepton2p4) >= 0.15 )  isMatchedRECO = false; 
    
 
 
-      Float_t pt1S = smear(pt1);
+	Float_t pt1S = smear(pt1);
 
-      //Float_t pt1S = linearW(pt1, 0.006);
-    
+	//Float_t pt1S = linearW(pt1, 0.006);
+	
+	
+	//cout << totalWReco  << endl;
+	
+	hPtLepton1WWLevel_RECO->Fill(pt1,    totalWReco); 
+	hPtLepton1WWLevel_GEN->Fill(lepGenpt1,totalW);
+	hPtLepton1WWLevel_RECO_GEN->Fill(pt1,lepGenpt1, totalW);
+	
+	hDileptonWWLevel_RECO->Fill(dileptonPt,        totalWReco); 
+	hDileptonWWLevel_GEN->Fill(dileptonGenPt,totalW);
+	hDileptonWWLevel_RECO_GEN->Fill(dileptonPt,dileptonGenPt , totalW);
+	
+	hmllWWLevel_RECO->Fill(mll,        totalWReco); 
+	hmllWWLevel_GEN->Fill(mllGen,totalW);
+	hmllWWLevel_RECO_GEN->Fill(mll , mllGen, totalW);
+	
+	hdphiWWLevel_RECO->Fill(dphill,        totalWReco); 
+	hdphiWWLevel_GEN->Fill(dphiGen,totalW);
+	hdphiWWLevel_RECO_GEN->Fill(dphill,dphiGen, totalW);
+	
+	hjetEtWWLevel_RECO->Fill(jetpt1, totalWReco);
+	hjetEtWWLevel_GEN->Fill( jetGen1_pt, totalWReco);
+	hjetEtWWLevel_RECO_GEN->Fill(jetpt1, jetGen1_pt, totalW);
 
-      //cout << totalWReco  << endl;
+	hInclusiveWWLevel_GEN->Fill(1, totalWGen);
+	hInclusiveWWLevel_RECO->Fill(1,   totalWReco);
+	
 
-      hPtLepton1WWLevel_RECO->Fill(pt1,    totalWReco); 
-      hPtLepton1WWLevel_GEN->Fill(lepGenpt1,totalW);
-      hPtLepton1WWLevel_RECO_GEN->Fill(pt1,lepGenpt1, totalW);
- 
-      hDileptonWWLevel_RECO->Fill(dileptonPt,        totalWReco); 
-      hDileptonWWLevel_GEN->Fill(dileptonGenPt,totalW);
-      hDileptonWWLevel_RECO_GEN->Fill(dileptonPt,dileptonGenPt , totalW);
-     
-      hmllWWLevel_RECO->Fill(mll,        totalWReco); 
-      hmllWWLevel_GEN->Fill(mllGen,totalW);
-      hmllWWLevel_RECO_GEN->Fill(mll , mllGen, totalW);
- 
-      hdphiWWLevel_RECO->Fill(dphill,        totalWReco); 
-      hdphiWWLevel_GEN->Fill(dphiGen,totalW);
-      hdphiWWLevel_RECO_GEN->Fill(dphill,dphiGen, totalW);
+	//---- Fill response matrix ( we have always with our selection 2 gen leptons and 2 reco leptons)
 
-
-      //---- Fill response matrix 
-
-      if (isMatched) {
 	responsePtLepton1.Fill(pt1, lepGenpt1, totalWReco);
 	responseDilepton.Fill(dileptonPt, dileptonGenPt, totalWReco);
 	responseMll.Fill(mll, mllGen, totalWReco);
 	responseDphi.Fill(dphill, dphiGen, totalWReco);
-      }	else {
+	responseInclusive.Fill(1, 1, totalWReco);
 
-	responsePtLepton1.Fake(pt1, totalWReco);
-	responseDilepton.Fake(dileptonPt, totalWReco);
-	responseMll.Fake(mll,  totalWReco);
-	responseDphi.Fkae(dphill, totalWReco);
-
-	cout << "Not found matched GEN !!! " << endl;
-
-	//	responsePtLepton1.Miss(lepGenpt1, totalWGen);
-
-
-      }
+      } else {	
+ 
+	hPtLepton1WWLevel_nonselected->Fill(lepGenpt1, totalW);
 	
-    }
-
-    else {
+	//---- Fill response matrix with efficiency 
 	
-      hPtLepton1WWLevel_nonselected->Fill(lepGenpt1, totalW);
+	responsePtLepton1.Miss(lepGenpt1, totalWGen);
+	responseDilepton.Miss(dileptonGenPt, totalWGen);
+	responseMll.Miss(mllGen, totalWGen);
+	responseDphi.Miss(dphiGen, totalWGen);
 
-      //---- Fill response matrix with efficiency 
+	responseInclusive.Miss(1, totalWGen);
+    } 
 
-      responsePtLepton1.Miss(lepGenpt1, totalWGen);
-      responseDilepton.Miss(dileptonGenPt, totalWGen);
-      responseMll.Miss(mllGen, totalWGen);
-      responseDphi.Miss(dphiGen, totalWGen);
 
-      }
+    /*
+	//---- Fill response matrix 	
+	
+	if (isMatchedGEN ) {
+	  
+	  responsePtLepton1.Fill(pt1, lepGenpt1, totalWReco);
+	  responseDilepton.Fill(dileptonPt, dileptonGenPt, totalWReco);
+	  responseMll.Fill(mll, mllGen, totalWReco);
+	  responseDphi.Fill(dphill, dphiGen, totalWReco);
+	  
+	  //      }	else if (!isMatchedGEN ) { 
+
+
+	} else { 
+	   
+	  responsePtLepton1.Fake(pt1, totalWReco);
+	  responseDilepton.Fake(dileptonPt, totalWReco);
+	  responseMll.Fake(mll,  totalWReco);
+	  responseDphi.Fake(dphill, totalWReco);
+	  
+	  if (!isMatchedRECO) responsePtLepton1.Miss(lepGenpt1, totalWGen);
+	  
+	  //cout << "Not found matched GEN !!! " << endl;
+	    
+	  //	responsePtLepton1.Miss(lepGenpt1, totalWGen);
+	        
+	} 
+
+	 } else {	
+ 
+	hPtLepton1WWLevel_nonselected->Fill(lepGenpt1, totalW);
+	
+	//---- Fill response matrix with efficiency 
+	
+	responsePtLepton1.Miss(lepGenpt1, totalWGen);
+	responseDilepton.Miss(dileptonGenPt, totalWGen);
+	responseMll.Miss(mllGen, totalWGen);
+	responseDphi.Miss(dphiGen, totalWGen);
+	 }
+	 
+*/
+
     
-    
-  }
+ }
 
 
+  
   // Save the histograms
   //----------------------------------------------------------------------------
   output->cd();
+  responsePtLepton1GEN.Write();
+  responseMllGEN.Write();
+  responseJetEtGEN.Write();
   responsePtLepton1.Write();
   responseDilepton.Write();
   responseMll.Write();
   responseDphi.Write();
+  responseInclusive.Write();
   output->Write("", TObject::kOverwrite);
   output->Close();
 
@@ -493,6 +671,7 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW") {
   
 
 
+  
 }
 
 
