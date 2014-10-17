@@ -180,34 +180,42 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   TString genDistribution = ""; 
   TString recoDistribution = ""; 
   TString response = "";
+  int kreg = 1; 
   
   if ( differential == 0 ) {
     distribution = "hPtLepton1WWLevel_Diff";
     response = "hPtLepton1WWLevel_RECO_hPtLepton1WWLevel_GEN";
     genDistribution = "hPtLepton1_GEN";
+    kreg = 3;
   }
 
   if ( differential == 1 ) {
     distribution = "hDileptonWWLevel_Diff";
     response = "hDileptonWWLevel_RECO_hDileptonWWLevel_GEN";
     genDistribution = "hDilepton_GEN";
+    kreg = 3;
   }
   
   if ( differential == 2 ) {
     distribution = "hMinvWWLevel_Diff";
     response = "hmllWWLevel_RECO_hmllWWLevel_GEN";
     genDistribution = "hmll_GEN";
-  }
+    kreg = 4;  
+}
 
   if ( differential == 3 ) {
     distribution = "hDeltaPhiWWLevel_Diff";
     response = "hdphiWWLevel_RECO_hdphiWWLevel_GEN";
     genDistribution = "hdphi_GEN";
+
+    kreg = 3; 
   }
-if ( differential == 6 ) {
+
+  if ( differential == 6 ) {
     distribution = "hWTopTagging";
     response = "hInclusiveWWLevel_RECO_hInclusiveWWLevel_GEN;";
     genDistribution = "hInclusive_GEN";
+    kreg = 3; 
   }
  
 
@@ -285,8 +293,7 @@ if ( differential == 6 ) {
   
   /// To be included also the underflow bin
   if (useOvf ) responseFinal->UseOverflow();    
-  
-  int kreg = 4; 
+ 
 
  //initialize SVD unfolding
  RooUnfoldSvd   unfold(responseFinal, WWdata,1);   
