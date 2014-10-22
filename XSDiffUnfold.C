@@ -157,14 +157,15 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   TFile* inputZZ       = new TFile(path + "ZZ.root");  
   TFile* inputDY       = new TFile(path + "DY.root");  
   TFile* inputDYtautau = new TFile(path + "DYtautau.root");  
-  TFile* inputWg       = new TFile(path + "Wgamma.root");  
+  //// SYSTEMATICS WRONG: TFile* inputWg       = new TFile(path + "Wgamma.root");  
   TFile* inputH125     = new TFile(path + "HWW125.root");  
-  TFile* inputZgamma   = new TFile(path + "Zgamma.root");  
+  //// SYSTEMATICS WRONG: TFile* inputZgamma   = new TFile(path + "Zgamma.root");  
   TFile* inputData     = new TFile(path + "DataRun2012_Total.root");  
 
   TFile* inputWW_GEN_pow     = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
   TFile* inputWW_GEN_mad     = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
   TFile* inputWW_GEN_mcnlo   = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
+  TFile* inputWW_GEN_amcnlo  = new TFile(rootPath + "WWGEN/WW_GEN_0jet_amcatnlo_full.root"); //for comparing with data
 
 
   //----------------------------------------------------------------------------
@@ -227,7 +228,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
     cout << "  " << endl;
   }
 
-  TH1F* hNWW, *hNggWW, *hNqqWW_mad, *hNqqWW_pow, *hNqqWW_mcnlo, *hNqqWW_mc, *hNTT, *hNTW, *hNZgamma;
+  TH1F* hNWW, *hNggWW, *hNqqWW_mad, *hNqqWW_pow, *hNqqWW_mcnlo, *hNqqWW_amcnlo, *hNqqWW_mc, *hNTT, *hNTW, *hNZgamma;
   TH1F* hNWj, *hNWZ, *hNZZ, *hNDY, *hNDYtautau;
   TH1F* hNWg, *hNH125, *hNData;  
 
@@ -246,6 +247,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   hNqqWW_mad     = (TH1F*) inputWW_GEN_mad       ->Get(genDistribution);
   hNqqWW_pow     = (TH1F*) inputWW_GEN_pow       ->Get(genDistribution);
   hNqqWW_mcnlo   = (TH1F*) inputWW_GEN_mcnlo     ->Get(genDistribution);
+  hNqqWW_amcnlo  = (TH1F*) inputWW_GEN_amcnlo    ->Get(genDistribution);
   hNqqWW_mc      = (TH1F*) inputqqWW_mc          ->Get(distribution);
 
  
@@ -257,9 +259,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   hNZZ       = (TH1F*) inputZZ      ->Get(distribution);
   hNDY       = (TH1F*) inputDY      ->Get(distribution);
   hNDYtautau = (TH1F*) inputDYtautau->Get(distribution);
-  hNWg       = (TH1F*) inputWg      ->Get(distribution);
+  ////S  hNWg       = (TH1F*) inputWg      ->Get(distribution);
   hNH125     = (TH1F*) inputH125    ->Get(distribution);
-  hNZgamma   = (TH1F*) inputZgamma  ->Get(distribution);
+  ////S  hNZgamma   = (TH1F*) inputZgamma  ->Get(distribution);
   hNData     = (TH1F*) inputData    ->Get(distribution);
   
  
@@ -278,8 +280,8 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   WWdata->Add(hNDY,-1.0);
   WWdata->Add(hNDYtautau,-1.0);
   WWdata->Add(hNH125,-1.0);
-  WWdata->Add(hNZgamma ,-1.0);
-  WWdata->Add(hNWg,-1.0);
+  ////S  WWdata->Add(hNZgamma ,-1.0);
+  ////S  WWdata->Add(hNWg,-1.0);
   
 
   WWdata->SetName(distribution);
@@ -417,8 +419,8 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   // save data histogram
 
   TString resPath = rootPath + "wwxsec/";
-  gSystem->mkdir(resPath, kTRUE);
-  TString resFile = Form("unfolded_%d.root",differential);
+  gSystem->mkdir(resPath + "systematics/", kTRUE);
+  TString resFile = Form("systematics/unfolded_%d.root",differential);
   TFile* outputData = new TFile(resPath + resFile,"RECREATE");
   outputData->cd();
   h_dataReco_unfolded->Write();
@@ -514,6 +516,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   Double_t NqqWW_pow [bin][4];
   Double_t NqqWW_mad [bin][4];
   Double_t NqqWW_mcnlo [bin][4];
+  Double_t NqqWW_amcnlo [bin][4];
 
 
   for (int ib=0; ib < bin; ib++) { 
@@ -529,6 +532,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 
     NqqWW_mcnlo [ib][0] = hNqqWW_mcnlo ->GetBinContent(ib+1); NqqWW_mcnlo [ib][1] = hNqqWW_mcnlo ->GetBinWidth(ib+1);
     NqqWW_mcnlo [ib][2] = hNqqWW_mcnlo ->GetBinError(ib+1); NqqWW_mcnlo [ib][3] = 0.0;
+
+    NqqWW_amcnlo [ib][0] = hNqqWW_amcnlo ->GetBinContent(ib+1); NqqWW_amcnlo [ib][1] = hNqqWW_amcnlo ->GetBinWidth(ib+1);
+    NqqWW_amcnlo [ib][2] = hNqqWW_amcnlo ->GetBinError(ib+1); NqqWW_amcnlo [ib][3] = 0.0;
 
  
 
@@ -635,6 +641,27 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
     xsValue_MCnlo->SetBinError(ib+1, xsMCnlo_stat [ib]);
 
   }
+
+ // ---->  compute differential WW Xsec for aMCNLO MC samples
+  //==============================================================================
+  
+  Double_t xsAMCnlo[bin];
+
+  Double_t xsAMCnlo_stat[bin];
+
+  TH1F *xsValue_aMCnlo = (TH1F*) hNWW->Clone("xsValue_amcnlo");
+
+
+  for (int ib=0; ib < bin; ib++) { 
+    
+    xsAMCnlo[ib] = NqqWW_amcnlo [ib][0] / (luminosity  * NqqWW_amcnlo[ib][1]);
+    xsAMCnlo_stat[ib] = NqqWW_amcnlo [ib][2] / (luminosity  * NqqWW_amcnlo[ib][1]);
+
+    xsValue_aMCnlo->SetBinContent(ib+1, xsAMCnlo [ib]);
+    xsValue_aMCnlo->SetBinError(ib+1, xsAMCnlo_stat [ib]);
+
+  }
+
   
   if( drawTheXS) { 
 
@@ -671,11 +698,17 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
       xsValue_Madgraph->SetLineWidth(2);
       xsValue_Madgraph->SetLineStyle(2);
    
-      //-- Plot Madgraph
+      //-- Plot MC@NLO
       xsValue_MCnlo->SetLineColor(kBlue);
       xsValue_MCnlo->SetMarkerColor(kBlue);
       xsValue_MCnlo->SetLineWidth(2);
       xsValue_MCnlo->SetLineStyle(3);
+
+      //-- Plot aMC@NLO
+      xsValue_aMCnlo->SetLineColor(kMagenta);
+      xsValue_aMCnlo->SetMarkerColor(kMagenta);
+      xsValue_aMCnlo->SetLineWidth(2);
+      xsValue_aMCnlo->SetLineStyle(3);
 
 
 
@@ -732,6 +765,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
       xsValue_Powheg->Draw("histE1,same");
       xsValue_Madgraph->Draw("hist,same");
       xsValue_MCnlo->Draw("hist,same");
+      xsValue_aMCnlo->Draw("hist,same");
       syst->Draw("e2, same");
       xsValue->Draw("p,same");
       
@@ -748,6 +782,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
       legend->AddEntry(xsValue_Powheg,   "Powheg", "L");
       legend->AddEntry(xsValue_Madgraph,   "Madgraph", "L");      
       legend->AddEntry(xsValue_MCnlo,   "MCNLO", "L");
+      legend->AddEntry(xsValue_aMCnlo,   "aMC@NLO", "1L");
       
 
 
@@ -765,6 +800,7 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 	TH1F* ratio_pow       = xsValue_Powheg->Clone("ratio");
 	TH1F* ratio_mad       = xsValue_Madgraph->Clone("ratio");
 	TH1F* ratio_mcnlo     = xsValue_MCnlo->Clone("ratio");
+	TH1F* ratio_amcnlo     = xsValue_aMCnlo->Clone("ratio");
 	TH1F* ratioErr        = xsValue->Clone("ratio");
 
 	for (UInt_t ibin=1; ibin<=ratio->GetNbinsX(); ibin++) {
@@ -778,6 +814,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 	  Double_t mcnloValue = xsValue_MCnlo->GetBinContent(ibin);
 	  Double_t mcnloError = xsValue_MCnlo->GetBinError  (ibin);
 
+	  Double_t amcnloValue = xsValue_aMCnlo->GetBinContent(ibin);
+	  Double_t amcnloError = xsValue_aMCnlo->GetBinError  (ibin);
+
 	  Double_t dataValue = xsValue->GetBinContent(ibin);
 	  Double_t dataError = xsValue->GetBinError  (ibin);
     
@@ -790,6 +829,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 	  Double_t ratioValue_mcnlo         = (mcnloValue > 0) ? dataValue/mcnloValue : 0.0;
 	  Double_t ratioError_mcnlo         = (mcnloValue > 0) ? dataError/mcnloValue : 0.0;
 
+	  Double_t ratioValue_amcnlo         = (amcnloValue > 0) ? dataValue/amcnloValue : 0.0;
+	  Double_t ratioError_amcnlo         = (amcnloValue > 0) ? dataError/amcnloValue : 0.0;
+
 	  Double_t uncertaintyError         = (dataValue > 0) ? 0.08 : 0.0;
 	  //dataError/dataValue 
 	  ratio_pow->SetBinContent(ibin, ratioValue_pow);
@@ -800,6 +842,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 
 	  ratio_mcnlo->SetBinContent(ibin, ratioValue_mcnlo);
 	  ratio_mcnlo->SetBinError  (ibin, ratioError_mcnlo);
+
+	  ratio_amcnlo->SetBinContent(ibin, ratioValue_amcnlo);
+	  ratio_amcnlo->SetBinError  (ibin, ratioError_amcnlo);
 
 	  ratioErr->SetBinContent(ibin, 1.0);
 	  ratioErr->SetBinError  (ibin, uncertaintyError);
@@ -825,6 +870,12 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
 	ratio_mcnlo     ->SetMarkerSize(1.0);
 	ratio_mcnlo      ->SetLineWidth(2);
 	ratio_mcnlo     ->SetMarkerStyle(20);
+
+	ratio_amcnlo      ->Draw("ep,same");
+	ratio_amcnlo     ->SetLineColor(kMagenta);
+	ratio_amcnlo     ->SetMarkerSize(1.0);
+	ratio_amcnlo      ->SetLineWidth(2);
+	ratio_amcnlo     ->SetMarkerStyle(20);
 
 	ratioErr->SetLineColor(kBlue);
 	ratioErr->SetFillColor  (kGray+2);
