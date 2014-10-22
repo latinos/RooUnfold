@@ -142,12 +142,13 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
  
   // Input files
   //----------------------------------------------------------------------------
-  TString path = Form("../%s/%djet/%s/", directory.Data(), njet, channel.Data());
+  TString rootPath = Form("../%s/%djet/", directory.Data(), njet);
+  TString path = Form("%s/%s/", rootPath.Data(), channel.Data());
   
-  TFile* inputWW       = new TFile(path + "WW_pow_nnll.root");  
+  TFile* inputWW       = new TFile(path + "WW.root"); // WW_pow_nnll.root  
   TFile* inputggWW     = new TFile(path + "ggWWto2L.root");  
   TFile* inputqqWW     = new TFile(path + "WWTo2L2Nu.root");  
-  TFile* inputqqWW_pow = new TFile(path + "WWTo2L2Nu_pow_nnll.root");  
+  TFile* inputqqWW_pow = new TFile(path + "WWTo2L2Nu_pow.root"); // WWTo2L2Nu_pow_nnll.root  
   TFile* inputqqWW_mc  = new TFile(path + "WWTo2L2Nu_mcnlo.root");  
   TFile* inputTT       = new TFile(path + "TTbar.root");  
   TFile* inputTW       = new TFile(path + "TW.root");  
@@ -161,9 +162,9 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   TFile* inputZgamma   = new TFile(path + "Zgamma.root");  
   TFile* inputData     = new TFile(path + "DataRun2012_Total.root");  
 
-  TFile* inputWW_GEN_pow     = new TFile("files/WW_GEN_0jet_pow_gg_full_NNLL_JetGenVeto_Eff_NNLOXsec_newLumi.root"); //for doing unfolding
-  TFile* inputWW_GEN_mad     = new TFile("files/WW_GEN_0jet_mad_gg_full_JetGenVeto_Eff_NNLOXsec_newLumi.root"); //for doing unfolding
-  TFile* inputWW_GEN_mcnlo   = new TFile("files/WW_GEN_0jet_mcnlo_gg_full_JetGenVeto_Eff_NNLOXsec_newLumi.root"); //for doing unfolding
+  TFile* inputWW_GEN_pow     = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
+  TFile* inputWW_GEN_mad     = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
+  TFile* inputWW_GEN_mcnlo   = new TFile(rootPath + "WWGEN/WW_GEN_0jet_pow_full.root"); //for doing unfolding
 
 
   //----------------------------------------------------------------------------
@@ -413,6 +414,16 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
   TH1F* h_dataReco_unfolded = (TH1F*) unfold.Hreco((RooUnfold::ErrorTreatment)doerror); 
 
 
+  // save data histogram
+
+  TString resPath = rootPath + "wwxsec/";
+  gSystem->mkdir(resPath, kTRUE);
+  TString resFile = Form("unfolded_%d.root",differential);
+  TFile* outputData = new TFile(resPath + resFile,"RECREATE");
+  outputData->cd();
+  h_dataReco_unfolded->Write();
+  outputData->Save();
+  outputData->Close();
 
   if (verbose > 0 ) { 
 
@@ -842,7 +853,8 @@ void XSDiffUnfold(Double_t  luminosity = 19365,
       if (differential == 3) addedDistribution = "dphill";
 
 
-      TString file = Form("pdf/wwxsec_%djet_%s_%s.pdf", njet, channel.Data(), addedDistribution.Data());
+      gSystem->mkdir(resPath + "pdf", kTRUE);
+      TString file = Form("%s/pdf/wwxsec_%djet_%s_%s.pdf", resPath.Data(), njet, channel.Data(), addedDistribution.Data());
 
       
       canvas->SaveAs(file);

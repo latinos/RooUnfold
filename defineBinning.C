@@ -22,15 +22,14 @@
 //------------------------------------------------------------------------------
 
 
-void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW", Bool_t jetGenVeto = 0 ) {
+void defineBinning(TString rootPath = "", Int_t   jetChannel = 0 , TString theSample = "WW", TString systematic = "nominals", Bool_t jetGenVeto = 0 ) {
 
   gSystem->Load("libRooUnfold");
 
   TH1::SetDefaultSumw2();
 
-  //TString path = Form("rootfiles/%djet/%s/", jetChannel, flavorChannel.Data());
- 
-  //gSystem->mkdir(path, kTRUE);
+  TString path = Form("../rootfiles/%s/%djet/WWGEN/", systematic.Data(), jetChannel);
+  gSystem->mkdir(path, kTRUE);
  
  
   //----------------------------------------------------------------------------
@@ -41,34 +40,11 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW", Bool_t jet
 
   //filesPath = "/gpfs/csic_projects/tier3data/LatinosSkims/ReducedTrees/DiferentialXSection/";
   filesPath = "/gpfs/csic_projects/cms/calderon/WWGEN/";
-  
+  if (rootPath != "") filesPath = rootPath;
 
   TChain* tree = new TChain("latino", "latino");
 
-  //tree->Add(filesPath + "latino_000_WWJets2LMad_OF.root");
-  //tree->Add(filesPath + "latinostep3_latinosYieldSkim_MC_WWmg.root");
-
-  //tree->Add(filesPath + "latino_006_WWJets_pow_OF.root");
-  //tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets.root");
-  //tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets_Smear.root");
-  tree->Add(filesPath + "latino_006_WWJets_pow_OF_genJets_nll_ewk_Smear.root");
-
-
-  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF.root");
-  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets.root");
-  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets_Smear.root");
-  //tree->Add(filesPath + "latino_002_WWJets_mcnlo_OF_genJets_nll_ewk_Smear.root");
-
-
-  //tree->Add(filesPath + "latino_000_WWJets_mad_OF.root");
-  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets.root");
-  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets_Smear.root");
-  //tree->Add(filesPath + "latino_000_WWJets_mad_OF_genJets_nll_ewk_Smear.root");
-
-  //tree->Add(filesPath + "
-
-  //tree->Add(filesPath + "latino_001_GGWWJets_OF.root");
-  //tree->Add(filesPath + "latino_001_GGWWJets_OF_genJets_Smear.root");
+  tree->Add(filesPath + "/" + systematic + "/" + "latino006_nll_ewk.root");
 
   //----------------------------------------------------------------------------
   // Define functions
@@ -79,11 +55,9 @@ void defineBinning(Int_t   jetChannel = 0 , TString theSample = "WW", Bool_t jet
   // Output files
   //----------------------------------------------------------------------------
   
-  //  TString path = Form("_GEN_%djet_pow_full.root",  jetChannel); 0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,
-  //TString path = Form("_GEN_0jet_gg_full_JetGenVeto_Eff.root"); 
-  TString path = Form("_GEN_0jet_pow_full_JetGenVeto_Eff.root");
+  TString name = Form("_GEN_0jet_pow_full.root");
 
-  TFile* output = new TFile( theSample+path, "recreate");
+  TFile* output = new TFile( path+theSample+name, "recreate");
 
 
   // Defining binning
