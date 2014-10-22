@@ -36,7 +36,7 @@ for SYSTEMATIC in $SYSTEMATICS; do
 
     for SAMPLE in $SAMPLES; do
 
-	root -l -b -q "defineBinning.C(\"$FILEPATH\",$NJETS,\"$SAMPLE\",\"$SYSTEMATIC\",0)"
+	root -l -b -q "defineBinning.C(\"$FILEPATH\",$NJETS,\"$SAMPLE\",\"$SYSTEMATIC\",1)"
 
     done
 
